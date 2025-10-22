@@ -1,0 +1,66 @@
+v# .dockerignore
+ # Files and directories to exclude from Docker build context
+ # This speeds up builds and reduces image size
+
+ # Maven build output
+ target/
+ *.jar
+ *.war
+ *.ear
+
+ # IDE files
+ .idea/
+ .vscode/
+ *.iml
+ *.ipr
+ *.iws
+ .project
+ .classpath
+ .settings/
+
+ # Git
+ .git/
+ .gitignore
+ .gitattributes
+
+ # Documentation
+ *.md
+ docs/
+ README.md
+ TESTING.md
+ TEST_EXECUTION.md
+
+ # Docker files (don't need these inside the image)
+ Dockerfile
+ docker-compose.yml
+ .dockerignore
+
+ # Test files (already tested before building image)
+ src/test/
+
+ # CI/CD
+ .github/
+ .gitlab-ci.yml
+ Jenkinsfile
+
+ # OS files
+ .DS_Store
+ Thumbs.db
+ *.swp
+ *.swo
+ *~
+
+ # Logs
+ *.log
+ logs/
+
+ # Temporary files
+ tmp/
+ temp/
+ *.tmp
+
+ # Why .dockerignore matters:
+ # - Faster builds (less data to send to Docker daemon)
+ # - Smaller build context
+ # - Prevents sensitive files from being included
+ # - Excludes unnecessary files from final image

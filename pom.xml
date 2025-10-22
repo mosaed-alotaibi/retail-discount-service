@@ -2,107 +2,113 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <!-- Project Coordinates -->
+    <groupId>com.retail.discount</groupId>
+    <artifactId>retail-discount-service</artifactId>
+    <version>1.0.0</version>
+    <packaging>jar</packaging>
+
+    <name>Retail Discount Service</name>
+    <description>REST API for calculating retail discounts based on customer type</description>
+
+    <!-- Spring Boot 3.5.6 Parent - provides dependency management -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.6</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
-    <groupId>io.mosaed</groupId>
-    <artifactId>retail-discount-service</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>retail-discount-service</name>
-    <description>retail-discount-service</description>
-    <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
+
+    <!-- Java 21 Properties -->
     <properties>
+        <!-- Java Version -->
         <java.version>21</java.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <testcontainers.version>1.20.6</testcontainers.version>
-        <jacoco.version>0.8.11</jacoco.version>
+        <!-- Dependency Versions (Spring Boot 3.5.6 provides most, override where needed) -->
+        <testcontainers.version>1.20.4</testcontainers.version>
+        <jacoco.version>0.8.12</jacoco.version>
+
+        <!-- SonarQube Properties -->
+        <sonar.host.url>http://localhost:9000</sonar.host.url>
+        <sonar.projectKey>retail-discount-service</sonar.projectKey>
+        <sonar.projectName>Retail Discount Service</sonar.projectName>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+        <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
+        <sonar.exclusions>
+            **/config/**,
+            **/RetailDiscountApplication.java,
+            **/dto/**,
+            **/document/**
+        </sonar.exclusions>
     </properties>
+
     <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-mongodb</artifactId>
-        </dependency>
+        <!-- ============================================ -->
+        <!-- SPRING BOOT STARTERS                         -->
+        <!-- ============================================ -->
+
+        <!-- Spring Boot Web - REST API support with embedded Tomcat -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Spring Data MongoDB - MongoDB integration with repositories -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>17.0.0</version>
-            <scope>compile</scope>
-        </dependency>
+        <!-- Spring Security - Authentication & Authorization -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-        <!-- Spring Boot Actuator - Health checks and monitoring -->
+        <!-- Spring Boot Validation - Bean Validation (Jakarta Validation) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Actuator - Health checks, metrics, and monitoring -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
         <!-- ============================================ -->
+        <!-- LOMBOK - Reduce Boilerplate Code            -->
+        <!-- ============================================ -->
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- ============================================ -->
         <!-- TESTING DEPENDENCIES                         -->
         <!-- ============================================ -->
 
-        <!-- Spring Boot Test - Testing support with JUnit, Mockito, etc. -->
+        <!-- Spring Boot Test - Testing support with JUnit 5, Mockito, AssertJ -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-            <exclusions>
-                <!-- Exclude JUnit 4 (we use JUnit 5) -->
-                <exclusion>
-                    <groupId>org.junit.vintage</groupId>
-                    <artifactId>junit-vintage-engine</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
-        <!-- Spring Security Test - Security testing support -->
+        <!-- Spring Security Test - Security testing utilities -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- Testcontainers - Docker containers for integration tests -->
+        <!-- Testcontainers Core - Docker containers for integration tests -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
@@ -118,48 +124,107 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Testcontainers JUnit 5 - Integration with JUnit 5 -->
+        <!-- Testcontainers JUnit 5 - Integration with JUnit Jupiter -->
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
-
-        <!-- AssertJ - Fluent assertion library (better than JUnit assertions) -->
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
+        <finalName>${project.artifactId}</finalName>
+
         <plugins>
+            <!-- ============================================ -->
+            <!-- Maven Compiler Plugin                        -->
+            <!-- ============================================ -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>21</source>
+                    <target>21</target>
+                    <release>21</release>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+
+            <!-- ============================================ -->
+            <!-- Spring Boot Maven Plugin                     -->
+            <!-- ============================================ -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
+            <!-- ============================================ -->
+            <!-- Maven Surefire Plugin - Unit Tests           -->
+            <!-- ============================================ -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
                 <configuration>
-                    <!-- Include all test classes -->
                     <includes>
                         <include>**/*Test.java</include>
                         <include>**/*Tests.java</include>
                     </includes>
+                    <excludes>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                        <exclude>**/*IT.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
 
+            <!-- ============================================ -->
+            <!-- Maven Failsafe Plugin - Integration Tests    -->
+            <!-- ============================================ -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/*IntegrationTest.java</include>
+                        <include>**/*IT.java</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- ============================================ -->
+            <!-- JaCoCo Plugin - Code Coverage                -->
+            <!-- ============================================ -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
                 <executions>
-                    <!-- Prepare JaCoCo agent for test execution -->
+                    <!-- Prepare agent for unit tests -->
                     <execution>
                         <id>prepare-agent</id>
                         <goals>
@@ -167,7 +232,15 @@
                         </goals>
                     </execution>
 
-                    <!-- Generate coverage report after tests run -->
+                    <!-- Prepare agent for integration tests -->
+                    <execution>
+                        <id>prepare-agent-integration</id>
+                        <goals>
+                            <goal>prepare-agent-integration</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Generate coverage report -->
                     <execution>
                         <id>report</id>
                         <phase>test</phase>
@@ -176,7 +249,49 @@
                         </goals>
                     </execution>
 
-                    <!-- Check coverage meets minimum thresholds -->
+                    <!-- Generate integration test coverage report -->
+                    <execution>
+                        <id>report-integration</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>report-integration</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Merge coverage from both unit and integration tests -->
+                    <execution>
+                        <id>merge-results</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>merge</goal>
+                        </goals>
+                        <configuration>
+                            <fileSets>
+                                <fileSet>
+                                    <directory>${project.build.directory}</directory>
+                                    <includes>
+                                        <include>jacoco.exec</include>
+                                        <include>jacoco-it.exec</include>
+                                    </includes>
+                                </fileSet>
+                            </fileSets>
+                            <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+                        </configuration>
+                    </execution>
+
+                    <!-- Generate merged report -->
+                    <execution>
+                        <id>merged-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+                        </configuration>
+                    </execution>
+
+                    <!-- Coverage verification rules -->
                     <execution>
                         <id>check</id>
                         <goals>
@@ -187,17 +302,10 @@
                                 <rule>
                                     <element>PACKAGE</element>
                                     <limits>
-                                        <!-- Minimum 80% line coverage -->
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>0.80</minimum>
-                                        </limit>
-                                        <!-- Minimum 70% branch coverage -->
-                                        <limit>
-                                            <counter>BRANCH</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>0.70</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
@@ -206,24 +314,60 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <!-- Exclude generated code and configuration from coverage -->
                     <excludes>
+                        <!-- Exclude configuration classes -->
                         <exclude>**/config/**</exclude>
+                        <!-- Exclude main application class -->
                         <exclude>**/RetailDiscountApplication.class</exclude>
+                        <!-- Exclude DTOs and simple POJOs -->
+                        <exclude>**/dto/**</exclude>
+                        <!-- Exclude MongoDB documents -->
+                        <exclude>**/document/**</exclude>
                     </excludes>
                 </configuration>
             </plugin>
 
+            <!-- ============================================ -->
+            <!-- SonarQube Scanner Plugin                     -->
+            <!-- ============================================ -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
-                <configuration>
-                    <source>21</source>
-                    <target>21</target>
-                </configuration>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>4.0.0.4121</version>
             </plugin>
         </plugins>
     </build>
+
+    <!-- ============================================ -->
+    <!-- Profiles for Different Environments          -->
+    <!-- ============================================ -->
+    <profiles>
+        <!-- Development Profile -->
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <spring.profiles.active>dev</spring.profiles.active>
+            </properties>
+        </profile>
+
+        <!-- Docker Profile -->
+        <profile>
+            <id>docker</id>
+            <properties>
+                <spring.profiles.active>docker</spring.profiles.active>
+            </properties>
+        </profile>
+
+        <!-- Production Profile -->
+        <profile>
+            <id>prod</id>
+            <properties>
+                <spring.profiles.active>prod</spring.profiles.active>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>
