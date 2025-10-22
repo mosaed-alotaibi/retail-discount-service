@@ -16,6 +16,9 @@ COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
 
+# Grant execute permissions to Maven wrapper (CRITICAL FIX)
+RUN chmod +x mvnw
+
 # Download dependencies (cached layer if pom.xml doesn't change)
 RUN ./mvnw dependency:go-offline -B
 
@@ -36,7 +39,7 @@ RUN mkdir -p target/dependency && \
 FROM eclipse-temurin:21-jre-alpine
 
 # Add metadata labels
-LABEL maintainer="your.email@example.com"
+LABEL maintainer="masaadbal@gmail.com"
 LABEL application="retail-discount-service"
 LABEL version="1.0.0"
 LABEL description="REST API for retail discount calculations"
@@ -75,4 +78,4 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport \
                -Djava.security.egd=file:/dev/./urandom"
 
 # Run the application with optimized JVM settings
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -cp app:app/lib/* com.retail.discount.RetailDiscountApplication"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -cp app:app/lib/* io.mosaed.retaildiscountservice.RetailDiscountServiceApplication"]

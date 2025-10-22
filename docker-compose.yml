@@ -1,5 +1,3 @@
-version: '3.8'
-
 # ========================================
 # Retail Discount Service - Docker Compose
 # ========================================
@@ -39,7 +37,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: retail-discount-service:jdk21
+    image: retail-discount-service:latest
     container_name: retail-discount-app
     restart: unless-stopped
     ports:

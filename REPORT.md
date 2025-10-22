@@ -762,4 +762,4 @@ Built with:
 
 ---
 
-**Made with ❤️ for D..0**
+**Made with ❤️ for D**
