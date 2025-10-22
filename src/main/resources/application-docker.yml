@@ -1,0 +1,41 @@
+# Docker-specific configuration
+#
+# This file is activated when running with the 'docker' Spring profile.
+# In docker-compose, we'll set: SPRING_PROFILES_ACTIVE=docker
+#
+# WHY separate configuration for Docker?
+#
+# When running locally, MongoDB is at 'localhost:27017'
+# When running in Docker, services communicate via Docker network using
+# service names. The MongoDB container is named 'mongodb' in docker-compose,
+# so we connect to 'mongodb:27017' instead of 'localhost:27017'
+
+spring:
+  data:
+    mongodb:
+      # Use the Docker service name 'mongodb' as the host
+      # Docker's internal DNS resolves this to the MongoDB container's IP
+      uri: mongodb://mongodb:27017/retail_discount
+      database: retail_discount
+
+      # Wait for MongoDB to be ready
+      # Docker containers start in parallel, but MongoDB might not be ready
+      # when the app starts. These settings help handle that.
+      connection-timeout: 30000
+      socket-timeout: 30000
+
+# Server configuration for Docker
+server:
+  # Listen on all network interfaces (0.0.0.0) not just localhost
+  # This allows Docker port mapping to work correctly
+  address: 0.0.0.0
+  port: 8080
+
+# Logging configuration for Docker
+logging:
+  level:
+    root: INFO
+    com.retail.discount: INFO
+    # Less verbose logging in Docker to reduce container log size
+    org.springframework.data.mongodb: INFO
+    org.springframework.web: INFO
