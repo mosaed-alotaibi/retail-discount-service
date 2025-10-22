@@ -1,0 +1,356 @@
+@startuml Retail Discount Service - UML Class Diagram
+
+!define DOMAIN_COLOR #E8F5E9
+!define APPLICATION_COLOR #E3F2FD
+!define ADAPTER_IN_COLOR #FFF3E0
+!define ADAPTER_OUT_COLOR #F3E5F5
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 80
+
+skinparam class {
+    BackgroundColor<<ValueObject>> #FFF9C4
+    BackgroundColor<<Entity>> #BBDEFB
+    BackgroundColor<<Service>> #C8E6C9
+    BackgroundColor<<Repository>> #FFE0B2
+    BackgroundColor<<Controller>> #FFCCBC
+    BackgroundColor<<DTO>> #E0E0E0
+    BackgroundColor<<Document>> #F8BBD0
+    BorderColor #424242
+    ArrowColor #424242
+    FontSize 11
+}
+
+' ====================================================================
+' DOMAIN LAYER
+' ====================================================================
+package "Domain Layer\n(Core Business Logic)" <<Rectangle>> DOMAIN_COLOR {
+    
+    enum CustomerType {
+        EMPLOYEE
+        AFFILIATE
+        CUSTOMER_OVER_2_YEARS
+        REGULAR
+        --
+        +getDiscountPercentage(): BigDecimal
+    }
+    
+    enum ItemCategory {
+        ELECTRONICS
+        CLOTHING
+        GROCERY
+        OTHER
+        --
+        +isEligibleForDiscount(): boolean
+    }
+    
+    class Money <<ValueObject>> {
+        -amount: BigDecimal
+        --
+        +Money(amount: BigDecimal)
+        +add(other: Money): Money
+        +subtract(other: Money): Money
+        +multiply(multiplier: BigDecimal): Money
+        +divide(divisor: BigDecimal): Money
+        +isGreaterThan(other: Money): boolean
+        +getAmount(): BigDecimal
+    }
+    
+    class Customer <<ValueObject>> {
+        -customerId: String
+        -type: CustomerType
+        -yearsAsCustomer: int
+        --
+        +Customer(customerId, type, yearsAsCustomer)
+        +getEffectiveType(): CustomerType
+        +getDiscountPercentage(): BigDecimal
+        +getCustomerId(): String
+        +getType(): CustomerType
+        +getYearsAsCustomer(): int
+    }
+    
+    class BillItem <<ValueObject>> {
+        -name: String
+        -category: ItemCategory
+        -price: Money
+        --
+        +BillItem(name, category, price)
+        +isEligibleForPercentageDiscount(): boolean
+        +getName(): String
+        +getCategory(): ItemCategory
+        +getPrice(): Money
+    }
+    
+    class Bill <<Entity>> <<Aggregate Root>> {
+        -billId: String
+        -customer: Customer
+        -items: List<BillItem>
+        -createdAt: LocalDateTime
+        --
+        +Bill(customer, items)
+        +calculateTotal(): Money
+        +calculateDiscount(customer: Customer): Money
+        +calculateNetPayable(customer: Customer): Money
+        +addItem(item: BillItem): void
+        +getItems(): List<BillItem>
+        +getCustomer(): Customer
+        +getBillId(): String
+    }
+    
+    ' Domain relationships
+    Bill *-- "1..*" BillItem : contains
+    Bill --> Customer : uses
+    Bill --> Money : uses
+    BillItem --> Money : uses
+    BillItem --> ItemCategory : uses
+    Customer --> CustomerType : uses
+}
+
+' ====================================================================
+' APPLICATION LAYER
+' ====================================================================
+package "Application Layer\n(Use Cases / Services)" <<Rectangle>> APPLICATION_COLOR {
+    
+    interface CustomerRepository {
+        +findById(customerId: String): Optional<Customer>
+        +save(customer: Customer): Customer
+        +existsById(customerId: String): boolean
+        +findAll(): List<Customer>
+    }
+    
+    interface BillRepository {
+        +findById(billId: String): Optional<Bill>
+        +save(bill: Bill): Bill
+        +findAll(): List<Bill>
+        +findByCustomerId(customerId: String): List<Bill>
+    }
+    
+    class BillService <<Service>> {
+        -customerRepository: CustomerRepository
+        -billRepository: BillRepository
+        --
+        +calculateBill(request: BillCalculationRequest): BillCalculationResponse
+        +saveBill(bill: Bill): Bill
+        +getBillById(billId: String): Bill
+    }
+    
+    class BillCalculationRequest <<DTO>> {
+        -customerId: String
+        -customerType: String
+        -items: List<BillItemRequest>
+        --
+        +getters/setters
+    }
+    
+    class BillItemRequest <<DTO>> {
+        -name: String
+        -category: String
+        -price: BigDecimal
+        --
+        +getters/setters
+    }
+    
+    class BillCalculationResponse <<DTO>> {
+        -billId: String
+        -customerId: String
+        -originalAmount: BigDecimal
+        -discount: BigDecimal
+        -netPayable: BigDecimal
+        -items: List<BillItemResponse>
+        --
+        +getters/setters
+    }
+    
+    class BillItemResponse <<DTO>> {
+        -name: String
+        -category: String
+        -price: BigDecimal
+        --
+        +getters/setters
+    }
+    
+    ' Application relationships
+    BillService --> CustomerRepository : depends on
+    BillService --> BillRepository : depends on
+    BillCalculationRequest *-- "1..*" BillItemRequest : contains
+    BillCalculationResponse *-- "1..*" BillItemResponse : contains
+}
+
+' ====================================================================
+' ADAPTER LAYER - IN (REST API)
+' ====================================================================
+package "Adapter Layer - IN\n(REST Controllers)" <<Rectangle>> ADAPTER_IN_COLOR {
+    
+    class BillController <<Controller>> {
+        -billService: BillService
+        --
+        +calculateBill(request: BillCalculationRequest): ResponseEntity<BillCalculationResponse>
+        +getBill(billId: String): ResponseEntity<BillResponse>
+    }
+    
+    class BillResponse <<DTO>> {
+        -billId: String
+        -customer: CustomerResponse
+        -items: List<BillItemResponse>
+        -totalAmount: BigDecimal
+        -discount: BigDecimal
+        -netPayable: BigDecimal
+        -createdAt: LocalDateTime
+        --
+        +getters/setters
+    }
+    
+    class CustomerResponse <<DTO>> {
+        -customerId: String
+        -type: String
+        -yearsAsCustomer: int
+        --
+        +getters/setters
+    }
+    
+    ' Adapter IN relationships
+    BillController --> BillService : depends on
+    BillResponse --> CustomerResponse : contains
+    BillResponse *-- "1..*" BillItemResponse : contains
+}
+
+' ====================================================================
+' ADAPTER LAYER - OUT (Persistence)
+' ====================================================================
+package "Adapter Layer - OUT\n(MongoDB Persistence)" <<Rectangle>> ADAPTER_OUT_COLOR {
+    
+    class MongoCustomerRepository <<Adapter>> {
+        -mongoTemplate: MongoTemplate
+        --
+        +findById(customerId: String): Optional<Customer>
+        +save(customer: Customer): Customer
+        +existsById(customerId: String): boolean
+        +findAll(): List<Customer>
+        --
+        -toDocument(customer: Customer): CustomerDocument
+        -toDomain(document: CustomerDocument): Customer
+    }
+    
+    class MongoBillRepository <<Adapter>> {
+        -mongoTemplate: MongoTemplate
+        --
+        +findById(billId: String): Optional<Bill>
+        +save(bill: Bill): Bill
+        +findAll(): List<Bill>
+        +findByCustomerId(customerId: String): List<Bill>
+        --
+        -toDocument(bill: Bill): BillDocument
+        -toDomain(document: BillDocument): Bill
+    }
+    
+    class CustomerDocument <<Document>> {
+        -id: String
+        -customerId: String
+        -type: String
+        -yearsAsCustomer: int
+        --
+        +getters/setters
+    }
+    
+    class BillDocument <<Document>> {
+        -id: String
+        -billId: String
+        -customerId: String
+        -items: List<BillItemDocument>
+        -totalAmount: BigDecimal
+        -discount: BigDecimal
+        -netPayable: BigDecimal
+        -createdAt: LocalDateTime
+        --
+        +getters/setters
+    }
+    
+    class BillItemDocument <<Document>> {
+        -name: String
+        -category: String
+        -price: BigDecimal
+        --
+        +getters/setters
+    }
+    
+    ' Adapter OUT relationships
+    MongoCustomerRepository ..|> CustomerRepository : implements
+    MongoBillRepository ..|> BillRepository : implements
+    MongoCustomerRepository ..> CustomerDocument : uses
+    MongoBillRepository ..> BillDocument : uses
+    BillDocument *-- "1..*" BillItemDocument : contains
+    MongoCustomerRepository ..> Customer : converts to/from
+    MongoBillRepository ..> Bill : converts to/from
+}
+
+' ====================================================================
+' CROSS-LAYER RELATIONSHIPS
+' ====================================================================
+BillController .down[thickness=2]..> BillService : <<depends on>>
+BillService .down[thickness=2]..> Bill : <<creates/uses>>
+BillService .down[thickness=2]..> Customer : <<creates/uses>>
+MongoCustomerRepository .up[thickness=2,#3F51B5]..> Customer : <<maps to>>
+MongoBillRepository .up[thickness=2,#3F51B5]..> Bill : <<maps to>>
+
+' ====================================================================
+' LEGEND & NOTES
+' ====================================================================
+legend right
+  **Architectural Layers**
+  - **Domain**: Core business logic (no dependencies)
+  - **Application**: Use cases and orchestration
+  - **Adapter IN**: External interfaces (REST API)
+  - **Adapter OUT**: Infrastructure (Database)
+  
+  **Key Patterns**
+  - **Hexagonal Architecture**: Ports & Adapters
+  - **DDD**: Aggregates, Entities, Value Objects
+  - **Dependency Inversion**: Abstractions over implementations
+  
+  **Stereotypes**
+  - <<Entity>>: Has identity, mutable
+  - <<Value Object>>: No identity, immutable
+  - <<Aggregate Root>>: Controls access to aggregate
+  - <<Service>>: Application orchestration
+  - <<Controller>>: HTTP request handler
+  - <<Adapter>>: Infrastructure implementation
+  - <<Document>>: MongoDB persistence model
+  - <<DTO>>: Data transfer object
+  
+  **Dependencies Flow**
+  Direction: INWARD (toward domain)
+  Domain has ZERO external dependencies
+endlegend
+
+note right of Bill
+  **Aggregate Root**
+  Controls all access to BillItems.
+  Contains core discount calculation logic.
+  Enforces business invariants.
+end note
+
+note right of Money
+  **Value Object**
+  Immutable, type-safe wrapper
+  for financial calculations.
+  Prevents precision errors.
+end note
+
+note right of BillService
+  **Application Service**
+  Orchestrates use cases.
+  Depends on port interfaces,
+  not concrete implementations.
+end note
+
+note bottom of MongoCustomerRepository
+  **Adapter (Implementation)**
+  Implements port interface.
+  Handles MongoDB specifics.
+  Maps domain ↔ documents.
+end note
+
+@enduml
