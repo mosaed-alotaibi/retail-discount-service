@@ -13,15 +13,23 @@ import io.mosaed.retaildiscountservice.application.port.out.CustomerRepository;
 import io.mosaed.retaildiscountservice.domain.exception.CustomerNotFoundException;
 import io.mosaed.retaildiscountservice.domain.model.Customer;
 import io.mosaed.retaildiscountservice.domain.model.CustomerType;
+import io.mosaed.retaildiscountservice.domain.model.Bill;
+import io.mosaed.retaildiscountservice.domain.model.BillItem;
+import io.mosaed.retaildiscountservice.domain.model.Money;
+import io.mosaed.retaildiscountservice.domain.model.ItemCategory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Nested;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -260,5 +268,150 @@ class BillServiceTest {
         assertThat(response.getPercentageDiscount()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(response.getBillBasedDiscount()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(response.getNetPayable()).isEqualByComparingTo(new BigDecimal("65.00"));
+    }
+
+    // ============================================
+    // GetBillUseCase Tests
+    // ============================================
+
+    @Nested
+    @DisplayName("GetBillUseCase Tests - Retrieve Bill by ID")
+    class GetBillUseCaseTests {
+
+        @Test
+        @DisplayName("Should retrieve bill by ID successfully")
+        void shouldRetrieveBillByIdSuccessfully() {
+            // Given a bill exists
+            Bill bill = Bill.create(
+                    testCustomer,
+                    List.of(BillItem.of("Laptop", ItemCategory.ELECTRONICS, Money.of(1000.00), 1))
+            );
+            bill.calculateDiscount();
+
+            when(billRepository.findById(bill.getBillId()))
+                    .thenReturn(Optional.of(bill));
+
+            // When retrieving the bill
+            Optional<BillCalculationResponse> response = billService.execute(bill.getBillId());
+
+            // Then the bill should be returned
+            assertThat(response).isPresent();
+            assertThat(response.get().getBillId()).isEqualTo(bill.getBillId());
+            assertThat(response.get().getCustomerId()).isEqualTo("EMP001");
+
+            verify(billRepository).findById(bill.getBillId());
+        }
+
+        @Test
+        @DisplayName("Should return empty when bill not found")
+        void shouldReturnEmptyWhenBillNotFound() {
+            // Given a bill doesn't exist
+            when(billRepository.findById("NONEXISTENT"))
+                    .thenReturn(Optional.empty());
+
+            // When retrieving the bill
+            Optional<BillCalculationResponse> response = billService.execute("NONEXISTENT");
+
+            // Then should return empty
+            assertThat(response).isEmpty();
+
+            verify(billRepository).findById("NONEXISTENT");
+        }
+    }
+
+    // ============================================
+    // ListBillsUseCase Tests
+    // ============================================
+
+    @Nested
+    @DisplayName("ListBillsUseCase Tests - Query Bills")
+    class ListBillsUseCaseTests {
+
+        private Bill bill1;
+        private Bill bill2;
+
+        @BeforeEach
+        void setUpBills() {
+            bill1 = Bill.create(
+                    testCustomer,
+                    List.of(BillItem.of("Laptop", ItemCategory.ELECTRONICS, Money.of(1000.00), 1))
+            );
+            bill1.calculateDiscount();
+
+            bill2 = Bill.create(
+                    testCustomer,
+                    List.of(BillItem.of("Mouse", ItemCategory.ELECTRONICS, Money.of(50.00), 1))
+            );
+            bill2.calculateDiscount();
+        }
+
+        @Test
+        @DisplayName("Should find bills by customer ID")
+        void shouldFindBillsByCustomerId() {
+            // Given customer has bills
+            when(billRepository.findByCustomerId("EMP001"))
+                    .thenReturn(Arrays.asList(bill1, bill2));
+
+            // When finding bills
+            List<BillCalculationResponse> bills = billService.findByCustomerId("EMP001");
+
+            // Then should return all customer bills
+            assertThat(bills).hasSize(2);
+            assertThat(bills.get(0).getCustomerId()).isEqualTo("EMP001");
+            assertThat(bills.get(1).getCustomerId()).isEqualTo("EMP001");
+
+            verify(billRepository).findByCustomerId("EMP001");
+        }
+
+        @Test
+        @DisplayName("Should return empty list when customer has no bills")
+        void shouldReturnEmptyListWhenCustomerHasNoBills() {
+            // Given customer has no bills
+            when(billRepository.findByCustomerId("CUST001"))
+                    .thenReturn(Collections.emptyList());
+
+            // When finding bills
+            List<BillCalculationResponse> bills = billService.findByCustomerId("CUST001");
+
+            // Then should return empty list
+            assertThat(bills).isEmpty();
+
+            verify(billRepository).findByCustomerId("CUST001");
+        }
+
+        @Test
+        @DisplayName("Should find bills by customer ID and date range")
+        void shouldFindBillsByCustomerIdAndDateRange() {
+            // Given customer has bills in date range
+            LocalDateTime from = LocalDateTime.now().minusDays(7);
+            LocalDateTime to = LocalDateTime.now();
+
+            when(billRepository.findByCustomerIdAndDateRange("EMP001", from, to))
+                    .thenReturn(Arrays.asList(bill1, bill2));
+
+            // When finding bills with date range
+            List<BillCalculationResponse> bills = billService.findByCustomerIdAndDateRange("EMP001", from, to);
+
+            // Then should return bills in date range
+            assertThat(bills).hasSize(2);
+
+            verify(billRepository).findByCustomerIdAndDateRange("EMP001", from, to);
+        }
+
+        @Test
+        @DisplayName("Should find recent bills with limit")
+        void shouldFindRecentBillsWithLimit() {
+            // Given repository has bills
+            when(billRepository.findRecentBills(10))
+                    .thenReturn(Arrays.asList(bill1, bill2));
+
+            // When finding recent bills
+            List<BillCalculationResponse> bills = billService.findRecentBills(10);
+
+            // Then should return limited bills
+            assertThat(bills).hasSize(2);
+
+            verify(billRepository).findRecentBills(10);
+        }
     }
 }
