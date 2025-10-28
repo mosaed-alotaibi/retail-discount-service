@@ -1,7 +1,6 @@
 # Retail Discount Service - Compliance Verification Report
 
 **Date:** 2025-10-28
-**Reviewer:** Claude Code Assistant
 **Project:** Retail Discount Service v1.0.0
 
 ---
