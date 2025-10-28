@@ -1,9 +1,6 @@
 package io.mosaed.retaildiscountservice.infrastructure.security;
 
-/**
- *
- * @author MOSAED ALOTAIBI
- */
+/// @author MOSAED ALOTAIBI
 
 import io.mosaed.retaildiscountservice.application.port.out.CustomerRepository;
 import io.mosaed.retaildiscountservice.domain.model.Customer;
@@ -47,7 +44,6 @@ public class CustomerUserDetailsService implements UserDetailsService {
     }
 
     private String getPasswordForCustomer(Customer customer) {
-
         return "{noop}password";
     }
 }
