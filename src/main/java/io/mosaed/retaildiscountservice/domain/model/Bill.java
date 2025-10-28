@@ -5,6 +5,10 @@ package io.mosaed.retaildiscountservice.domain.model;
  * @author MOSAED ALOTAIBI
  */
 
+import io.mosaed.retaildiscountservice.domain.event.BillCalculated;
+import io.mosaed.retaildiscountservice.domain.event.BillCreated;
+import io.mosaed.retaildiscountservice.domain.event.DomainEvent;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -20,6 +24,9 @@ public class Bill {
     private final Customer customer;
     private final List<BillItem> items;
 
+    // Domain events collected by this aggregate
+    private final transient List<DomainEvent> domainEvents = new ArrayList<>();
+
     // cached calculation results (calc on demand)
     private transient DiscountBreakdown cachedDiscount;
 
@@ -32,12 +39,23 @@ public class Bill {
 
     public static Bill create(Customer customer, List<BillItem> items) {
         validateCreation(customer, items);
-        return new Bill(
+        Bill bill = new Bill(
                 UUID.randomUUID().toString(),
                 customer,
                 items,
                 LocalDateTime.now()
         );
+
+        // Register domain event
+        Money totalAmount = bill.getTotalAmount();
+        bill.registerEvent(new BillCreated(
+                bill.billId,
+                customer.getCustomerId(),
+                totalAmount.getAmount(),
+                totalAmount.getAmount() // Initial net payable before calculation
+        ));
+
+        return bill;
     }
 
     public static Bill reconstitute(String billId, Customer customer, List<BillItem> items, LocalDateTime createdAt) {
@@ -96,6 +114,18 @@ public class Bill {
                 customer.getDiscountPercentage()
         );
 
+        // Register domain event for calculation
+        registerEvent(new BillCalculated(
+                billId,
+                customer.getCustomerId(),
+                totalAmount.getAmount(),
+                percentageDiscount.getAmount(),
+                customer.getDiscountPercentage(),
+                billBasedDiscount.getAmount(),
+                totalDiscount.getAmount(),
+                netPayable.getAmount()
+        ));
+
         return cachedDiscount;
     }
 
@@ -134,6 +164,31 @@ public class Bill {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    /**
+     * Register a domain event that occurred in this aggregate.
+     */
+    private void registerEvent(DomainEvent event) {
+        this.domainEvents.add(event);
+    }
+
+    /**
+     * Get all domain events and clear them.
+     * This follows the pattern where events are collected during the aggregate's
+     * lifecycle and then published by the application service.
+     */
+    public List<DomainEvent> pullDomainEvents() {
+        List<DomainEvent> events = new ArrayList<>(this.domainEvents);
+        this.domainEvents.clear();
+        return events;
+    }
+
+    /**
+     * Get domain events without clearing them.
+     */
+    public List<DomainEvent> getDomainEvents() {
+        return Collections.unmodifiableList(domainEvents);
     }
 
     public static class DiscountBreakdown {

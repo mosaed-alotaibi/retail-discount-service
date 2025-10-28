@@ -30,6 +30,7 @@
         <!-- Dependency Versions (Spring Boot 3.5.6 provides most, override where needed) -->
         <testcontainers.version>1.20.4</testcontainers.version>
         <jacoco.version>0.8.12</jacoco.version>
+        <springdoc.version>2.7.0</springdoc.version>
 
         <!-- SonarQube Properties -->
         <sonar.host.url>http://localhost:9000</sonar.host.url>
@@ -78,6 +79,17 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- ============================================ -->
+        <!-- SPRINGDOC OPENAPI - API Documentation        -->
+        <!-- ============================================ -->
+
+        <!-- SpringDoc OpenAPI UI - Generates OpenAPI 3 documentation and Swagger UI -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
 
         <!-- ============================================ -->
