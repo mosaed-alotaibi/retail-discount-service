@@ -1,0 +1,22 @@
+# Test Configuration
+# This configuration is used during test execution
+
+spring:
+  # MongoDB Configuration for Tests
+  data:
+    mongodb:
+      # Use a test database
+      uri: mongodb://localhost:27017/retail_discount_test
+      database: retail_discount_test
+
+      # Disable auto-index creation during tests to avoid authentication issues
+      # Tests should not create indexes on a real MongoDB instance
+      auto-index-creation: false
+
+# Logging for tests
+logging:
+  level:
+    root: WARN
+    io.mosaed.retaildiscountservice: INFO
+    org.springframework: WARN
+    org.mongodb: WARN
