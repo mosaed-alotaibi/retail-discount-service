@@ -11,6 +11,7 @@ import io.mosaed.retaildiscountservice.application.dto.CalculateBillCommand;
 import io.mosaed.retaildiscountservice.application.port.out.BillRepository;
 import io.mosaed.retaildiscountservice.application.port.out.CustomerRepository;
 import io.mosaed.retaildiscountservice.domain.exception.CustomerNotFoundException;
+import io.mosaed.retaildiscountservice.domain.exception.InvalidBillException;
 import io.mosaed.retaildiscountservice.domain.model.Customer;
 import io.mosaed.retaildiscountservice.domain.model.CustomerType;
 import io.mosaed.retaildiscountservice.domain.model.Bill;
@@ -231,9 +232,9 @@ class BillServiceTest {
                 .thenReturn(Optional.of(testCustomer));
 
         // When executing with invalid data
-        // Then should throw IllegalArgumentException from domain
+        // Then should throw InvalidBillException (wrapping domain validation errors)
         assertThatThrownBy(() -> billService.execute(command))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(InvalidBillException.class);
 
         // Bill should not be saved when domain validation fails
         verify(billRepository, never()).save(any());

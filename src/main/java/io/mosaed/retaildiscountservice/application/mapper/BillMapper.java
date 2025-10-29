@@ -39,6 +39,12 @@ public final class BillMapper {
                     unitPrice,
                     dto.getQuantity()
             );
+        } catch (InvalidBillException e) {
+            // Re-wrap InvalidBillException from parseCategory with item name
+            throw new InvalidBillException(
+                    String.format("Invalid bill item '%s': %s", dto.getName(), e.getMessage()),
+                    e
+            );
         } catch (IllegalArgumentException e) {
             // Wrap domain validation errors in our application exception
             throw new InvalidBillException(
